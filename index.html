@@ -32,14 +32,12 @@
     <button onclick="addBlock()">追加</button>
     <button onclick="playMelody()">再生</button>
     <textarea id="output" rows="4" cols="50"></textarea>
+    <button onclick="loadFromText()">読み込み</button>
 
     <script>
-        function addBlock() {
+        function addBlock(freq = 440, dur = 200) {
             const container = document.getElementById('blocks-container');
             const blocks = container.getElementsByClassName('block');
-            const lastBlock = blocks[blocks.length - 1];
-            const lastFreq = lastBlock.querySelector('.frequency').value;
-            const lastDur = lastBlock.querySelector('.duration').value;
 
             if (blocks.length < 10) {
                 const newBlock = document.createElement('div');
@@ -47,8 +45,8 @@
                 newBlock.innerHTML = `
                     <button onclick="moveUp(this)">↑</button>
                     <button onclick="moveDown(this)">↓</button>
-                    <input type="number" class="frequency" value="${lastFreq}">
-                    <input type="number" class="duration" value="${lastDur}">
+                    <input type="number" class="frequency" value="${freq}">
+                    <input type="number" class="duration" value="${dur}">
                     <button onclick="removeBlock(this)">削除</button>
                 `;
                 container.appendChild(newBlock);
@@ -114,6 +112,19 @@
                 oscillator.stop(startTime + msecArray[i] / 1000);
 
                 startTime += msecArray[i] / 1000;
+            }
+        }
+
+        function loadFromText() {
+            const output = document.getElementById('output').value;
+            const freqArray = output.match(/freq_array\.push\(\[(.*?)\]\);/)[1].split(',').map(Number);
+            const msecArray = output.match(/msec_array\.push\(\[(.*?)\]\);/)[1].split(',').map(Number);
+
+            const container = document.getElementById('blocks-container');
+            container.innerHTML = '';
+
+            for (let i = 0; i < freqArray.length; i++) {
+                addBlock(freqArray[i], msecArray[i]);
             }
         }
     </script>
