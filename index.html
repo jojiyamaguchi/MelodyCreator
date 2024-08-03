@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>メロディー作成プログラム</title>
+    <style>
+        .block {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .block input {
+            margin: 0 5px;
+        }
+        .block button {
+            margin: 0 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>メロディー作成プログラム</h1>
+    <div id="blocks-container">
+        <div class="block">
+            <button onclick="moveUp(this)">↑</button>
+            <button onclick="moveDown(this)">↓</button>
+            <input type="number" class="frequency" value="440">
+            <input type="number" class="duration" value="200">
+            <button onclick="removeBlock(this)">削除</button>
+        </div>
+    </div>
+    <button onclick="addBlock()">追加</button>
+    <button onclick="playMelody()">再生</button>
+    <textarea id="output" rows="4" cols="50"></textarea>
+
+    <script>
+        function addBlock() {
+            const container = document.getElementById('blocks-container');
+            const blocks = container.getElementsByClassName('block');
+            const lastBlock = blocks[blocks.length - 1];
+            const lastFreq = lastBlock.querySelector('.frequency').value;
+            const lastDur = lastBlock.querySelector('.duration').value;
+
+            if (blocks.length < 10) {
+                const newBlock = document.createElement('div');
+                newBlock.className = 'block';
+                newBlock.innerHTML = `
+                    <button onclick="moveUp(this)">↑</button>
+                    <button onclick="moveDown(this)">↓</button>
+                    <input type="number" class="frequency" value="${lastFreq}">
+                    <input type="number" class="duration" value="${lastDur}">
+                    <button onclick="removeBlock(this)">削除</button>
+                `;
+                container.appendChild(newBlock);
+            }
+        }
+
+        function removeBlock(button) {
+            const block = button.parentElement;
+            block.remove();
+        }
+
+        function moveUp(button) {
+            const block = button.parentElement;
+            const prevBlock = block.previousElementSibling;
+            if (prevBlock) {
+                block.parentElement.insertBefore(block, prevBlock);
+            }
+        }
+
+        function moveDown(button) {
+            const block = button.parentElement;
+            const nextBlock = block.nextElementSibling;
+            if (nextBlock) {
+                block.parentElement.insertBefore(nextBlock, block);
+            }
+        }
+
+        function playMelody() {
+            const container = document.getElementById('blocks-container');
+            const blocks = container.getElementsByClassName('block');
+            const freqArray = [];
+            const msecArray = [];
+
+            for (let block of blocks) {
+                const freq = block.querySelector('.frequency').value;
+                const dur = block.querySelector('.duration').value;
+                freqArray.push(parseInt(freq));
+                msecArray.push(parseInt(dur));
+            }
+
+            const output = document.getElementById('output');
+            output.value = `freq_array.push([${freqArray.join(',')}]);\nmsec_array.push([${msecArray.join(',')}]);`;
+
+            playSound(freqArray, msecArray);
+        }
+
+        function playSound(freqArray, msecArray) {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            let startTime = audioCtx.currentTime;
+
+            for (let i = 0; i < freqArray.length; i++) {
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(freqArray[i], startTime);
+                gainNode.gain.setValueAtTime(1, startTime);
+
+                oscillator.start(startTime);
+                oscillator.stop(startTime + msecArray[i] / 1000);
+
+                startTime += msecArray[i] / 1000;
+            }
+        }
+    </script>
+</body>
+</html>
