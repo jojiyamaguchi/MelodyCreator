@@ -16,6 +16,9 @@
         .block button {
             margin: 0 5px;
         }
+        .label {
+            margin: 0 5px;
+        }
     </style>
 </head>
 <body>
@@ -24,7 +27,9 @@
         <div class="block">
             <button onclick="moveUp(this)">↑</button>
             <button onclick="moveDown(this)">↓</button>
+            <span class="label">周波数(Hz):</span>
             <input type="number" class="frequency" value="440">
+            <span class="label">時間(ms):</span>
             <input type="number" class="duration" value="200">
             <button onclick="removeBlock(this)">削除</button>
         </div>
@@ -45,7 +50,9 @@
                 newBlock.innerHTML = `
                     <button onclick="moveUp(this)">↑</button>
                     <button onclick="moveDown(this)">↓</button>
+                    <span class="label">周波数(Hz):</span>
                     <input type="number" class="frequency" value="${freq}">
+                    <span class="label">時間(ms):</span>
                     <input type="number" class="duration" value="${dur}">
                     <button onclick="removeBlock(this)">削除</button>
                 `;
