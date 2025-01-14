@@ -9,6 +9,10 @@
             display: flex;
             align-items: center;
             margin-bottom: 10px;
+            border: 1px solid #ccc;
+            padding: 5px;
+            background-color: #f9f9f9;
+            cursor: move;
         }
         .block input {
             margin: 0 5px;
@@ -19,14 +23,23 @@
         .label {
             margin: 0 5px;
         }
+        .highlight {
+            border: 2px dashed #007bff;
+            background-color: #e7f1ff;
+        }
     </style>
 </head>
 <body>
     <h1>メロディー作成プログラム</h1>
+    <div>
+        <span class="label">初期周波数(Hz):</span>
+        <input type="number" id="initial-frequency" value="440">
+        <span class="label">初期時間(ms):</span>
+        <input type="number" id="initial-duration" value="200">
+    </div>
     <div id="blocks-container">
-        <div class="block">
-            <button onclick="moveUp(this)">↑</button>
-            <button onclick="moveDown(this)">↓</button>
+        <div class="block" draggable="true" ondragstart="drag(event)">
+            <input type="checkbox" class="play-sound" checked>
             <span class="label">周波数(Hz):</span>
             <input type="number" class="frequency" value="440">
             <span class="label">時間(ms):</span>
@@ -40,16 +53,22 @@
     <button onclick="loadFromText()">読み込み</button>
 
     <script>
-        function addBlock(freq = 440, dur = 200) {
+        let dragged;
+        let placeholder;
+
+        function addBlock() {
+            const freq = document.getElementById('initial-frequency').value;
+            const dur = document.getElementById('initial-duration').value;
             const container = document.getElementById('blocks-container');
             const blocks = container.getElementsByClassName('block');
 
             if (blocks.length < 10) {
                 const newBlock = document.createElement('div');
                 newBlock.className = 'block';
+                newBlock.draggable = true;
+                newBlock.ondragstart = drag;
                 newBlock.innerHTML = `
-                    <button onclick="moveUp(this)">↑</button>
-                    <button onclick="moveDown(this)">↓</button>
+                    <input type="checkbox" class="play-sound" checked>
                     <span class="label">周波数(Hz):</span>
                     <input type="number" class="frequency" value="${freq}">
                     <span class="label">時間(ms):</span>
@@ -65,21 +84,36 @@
             block.remove();
         }
 
-        function moveUp(button) {
-            const block = button.parentElement;
-            const prevBlock = block.previousElementSibling;
-            if (prevBlock) {
-                block.parentElement.insertBefore(block, prevBlock);
-            }
+        function drag(event) {
+            dragged = event.target;
+            placeholder = document.createElement('div');
+            placeholder.className = 'block highlight';
+            placeholder.style.height = `${dragged.offsetHeight}px`;
         }
 
-        function moveDown(button) {
-            const block = button.parentElement;
-            const nextBlock = block.nextElementSibling;
-            if (nextBlock) {
-                block.parentElement.insertBefore(nextBlock, block);
+        document.getElementById('blocks-container').addEventListener('dragover', function(event) {
+            event.preventDefault();
+            const target = event.target;
+            if (target.className.includes('block') && target !== dragged) {
+                const rect = target.getBoundingClientRect();
+                const next = (event.clientY - rect.top) / (rect.bottom - rect.top) > 0.5;
+                this.insertBefore(placeholder, next ? target.nextSibling : target);
             }
-        }
+        });
+
+        document.getElementById('blocks-container').addEventListener('dragleave', function(event) {
+            if (event.target === placeholder) {
+                placeholder.remove();
+            }
+        });
+
+        document.getElementById('blocks-container').addEventListener('drop', function(event) {
+            event.preventDefault();
+            if (placeholder) {
+                this.insertBefore(dragged, placeholder);
+                placeholder.remove();
+            }
+        });
 
         function playMelody() {
             const container = document.getElementById('blocks-container');
@@ -88,10 +122,12 @@
             const msecArray = [];
 
             for (let block of blocks) {
-                const freq = block.querySelector('.frequency').value;
-                const dur = block.querySelector('.duration').value;
-                freqArray.push(parseInt(freq));
-                msecArray.push(parseInt(dur));
+                if (block.querySelector('.play-sound').checked) {
+                    const freq = block.querySelector('.frequency').value;
+                    const dur = block.querySelector('.duration').value;
+                    freqArray.push(parseInt(freq));
+                    msecArray.push(parseInt(dur));
+                }
             }
 
             const output = document.getElementById('output');
