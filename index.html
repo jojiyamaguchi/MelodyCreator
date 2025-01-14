@@ -56,9 +56,7 @@
         let dragged;
         let placeholder;
 
-        function addBlock() {
-            const freq = document.getElementById('initial-frequency').value;
-            const dur = document.getElementById('initial-duration').value;
+        function addBlock(freq = null, dur = null) {
             const container = document.getElementById('blocks-container');
             const blocks = container.getElementsByClassName('block');
 
@@ -70,9 +68,9 @@
                 newBlock.innerHTML = `
                     <input type="checkbox" class="play-sound" checked>
                     <span class="label">周波数(Hz):</span>
-                    <input type="number" class="frequency" value="${freq}">
+                    <input type="number" class="frequency" value="${freq !== null ? freq : document.getElementById('initial-frequency').value}">
                     <span class="label">時間(ms):</span>
-                    <input type="number" class="duration" value="${dur}">
+                    <input type="number" class="duration" value="${dur !== null ? dur : document.getElementById('initial-duration').value}">
                     <button onclick="removeBlock(this)">削除</button>
                 `;
                 container.appendChild(newBlock);
