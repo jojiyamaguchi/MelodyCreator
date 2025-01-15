@@ -32,18 +32,23 @@
 <body>
     <h1>メロディー作成プログラム</h1>
     <div>
-        <span class="label">初期周波数(Hz):</span>
-        <input type="number" id="initial-frequency" value="440">
+        <span class="label">初期開始周波数(Hz):</span>
+        <input type="number" id="initial-start-frequency" value="440">
+        <span class="label">初期終了周波数(Hz):</span>
+        <input type="number" id="initial-end-frequency" value="440">
         <span class="label">初期時間(ms):</span>
         <input type="number" id="initial-duration" value="200">
     </div>
     <div id="blocks-container">
         <div class="block" draggable="true" ondragstart="drag(event)">
             <input type="checkbox" class="play-sound" checked>
-            <span class="label">周波数(Hz):</span>
-            <input type="number" class="frequency" value="440">
+            <span class="label">開始周波数(Hz):</span>
+            <input type="number" class="start-frequency" value="440">
+            <span class="label">終了周波数(Hz):</span>
+            <input type="number" class="end-frequency" value="440">
             <span class="label">時間(ms):</span>
             <input type="number" class="duration" value="200">
+            <button onclick="playSingleBlock(this)">再生</button>
             <button onclick="removeBlock(this)">削除</button>
         </div>
     </div>
@@ -56,7 +61,7 @@
         let dragged;
         let placeholder;
 
-        function addBlock(freq = null, dur = null) {
+        function addBlock(startFreq = null, endFreq = null, dur = null) {
             const container = document.getElementById('blocks-container');
             const blocks = container.getElementsByClassName('block');
 
@@ -67,10 +72,13 @@
                 newBlock.ondragstart = drag;
                 newBlock.innerHTML = `
                     <input type="checkbox" class="play-sound" checked>
-                    <span class="label">周波数(Hz):</span>
-                    <input type="number" class="frequency" value="${freq !== null ? freq : document.getElementById('initial-frequency').value}">
+                    <span class="label">開始周波数(Hz):</span>
+                    <input type="number" class="start-frequency" value="${startFreq !== null ? startFreq : document.getElementById('initial-start-frequency').value}">
+                    <span class="label">終了周波数(Hz):</span>
+                    <input type="number" class="end-frequency" value="${endFreq !== null ? endFreq : document.getElementById('initial-end-frequency').value}">
                     <span class="label">時間(ms):</span>
                     <input type="number" class="duration" value="${dur !== null ? dur : document.getElementById('initial-duration').value}">
+                    <button onclick="playSingleBlock(this)">再生</button>
                     <button onclick="removeBlock(this)">削除</button>
                 `;
                 container.appendChild(newBlock);
@@ -116,29 +124,41 @@
         function playMelody() {
             const container = document.getElementById('blocks-container');
             const blocks = container.getElementsByClassName('block');
-            const freqArray = [];
+            const startFreqArray = [];
+            const endFreqArray = [];
             const msecArray = [];
 
             for (let block of blocks) {
                 if (block.querySelector('.play-sound').checked) {
-                    const freq = block.querySelector('.frequency').value;
+                    const startFreq = block.querySelector('.start-frequency').value;
+                    const endFreq = block.querySelector('.end-frequency').value;
                     const dur = block.querySelector('.duration').value;
-                    freqArray.push(parseInt(freq));
+                    startFreqArray.push(parseInt(startFreq));
+                    endFreqArray.push(parseInt(endFreq));
                     msecArray.push(parseInt(dur));
                 }
             }
 
             const output = document.getElementById('output');
-            output.value = `freq_array.push([${freqArray.join(',')}]);\nmsec_array.push([${msecArray.join(',')}]);`;
+            output.value = `start_freq_array.push([${startFreqArray.join(',')}]);\nend_freq_array.push([${endFreqArray.join(',')}]);\nmsec_array.push([${msecArray.join(',')}]);`;
 
-            playSound(freqArray, msecArray);
+            playSound(startFreqArray, endFreqArray, msecArray);
         }
 
-        function playSound(freqArray, msecArray) {
+        function playSingleBlock(button) {
+            const block = button.parentElement;
+            const startFreq = parseInt(block.querySelector('.start-frequency').value);
+            const endFreq = parseInt(block.querySelector('.end-frequency').value);
+            const dur = parseInt(block.querySelector('.duration').value);
+
+            playSound([startFreq], [endFreq], [dur]);
+        }
+
+        function playSound(startFreqArray, endFreqArray, msecArray) {
             const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             let startTime = audioCtx.currentTime;
 
-            for (let i = 0; i < freqArray.length; i++) {
+            for (let i = 0; i < startFreqArray.length; i++) {
                 const oscillator = audioCtx.createOscillator();
                 const gainNode = audioCtx.createGain();
 
@@ -146,7 +166,8 @@
                 gainNode.connect(audioCtx.destination);
 
                 oscillator.type = 'sine';
-                oscillator.frequency.setValueAtTime(freqArray[i], startTime);
+                oscillator.frequency.setValueAtTime(startFreqArray[i], startTime);
+                oscillator.frequency.linearRampToValueAtTime(endFreqArray[i], startTime + msecArray[i] / 1000);
                 gainNode.gain.setValueAtTime(1, startTime);
 
                 oscillator.start(startTime);
@@ -158,14 +179,15 @@
 
         function loadFromText() {
             const output = document.getElementById('output').value;
-            const freqArray = output.match(/freq_array\.push\(\[(.*?)\]\);/)[1].split(',').map(Number);
+            const startFreqArray = output.match(/start_freq_array\.push\(\[(.*?)\]\);/)[1].split(',').map(Number);
+            const endFreqArray = output.match(/end_freq_array\.push\(\[(.*?)\]\);/)[1].split(',').map(Number);
             const msecArray = output.match(/msec_array\.push\(\[(.*?)\]\);/)[1].split(',').map(Number);
 
             const container = document.getElementById('blocks-container');
             container.innerHTML = '';
 
-            for (let i = 0; i < freqArray.length; i++) {
-                addBlock(freqArray[i], msecArray[i]);
+            for (let i = 0; i < startFreqArray.length; i++) {
+                addBlock(startFreqArray[i], endFreqArray[i], msecArray[i]);
             }
         }
     </script>
